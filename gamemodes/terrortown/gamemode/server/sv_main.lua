@@ -884,6 +884,9 @@ function GM:PreCleanupMap()
 	ents.TTT.FixParentedPreCleanup()
 
 	entityOutputs.CleanUp()
+
+	-- While cleaning up the map, disable random weapons directly spawning
+	entspawn.SetForcedRandomSpawn(false)
 end
 
 ---
@@ -898,6 +901,11 @@ function GM:PostCleanupMap()
 	entityOutputs.SetUp()
 
 	entspawn.HandleSpawns()
+
+	-- After map cleanup enable 'env_entity_maker'-entities to force spawn random weapons and ammo
+	-- This is necessary for maps like 'ttt_lttp_kakariko_a5', that only initialize 'ttt_random_weapon'-entities
+	-- after destroying vases and were therefore not affected by our entspawn-system
+	entspawn.SetForcedRandomSpawn(true)
 	---
 	-- @realm server
 	hook.Run("TTT2PostCleanupMap")
@@ -1487,6 +1495,8 @@ end
 ---
 -- Can be used to modify the table of teams with alive players. This hook is
 -- used in the default win condition.
+-- @note A dead player that is revived is counted as alive as well if the revival mode
+-- ist set to blocking mode.
 -- @param table alives The table of teams which have at least one player still alive
 -- @hook
 -- @realm server
@@ -1535,34 +1545,39 @@ function GM:TTTCheckForWin()
 	end
 
 	if self.MapWin ~= WIN_NONE then -- a role wins
-		local mw = self.MapWin
+		local mapWin = self.MapWin
 
 		self.MapWin = WIN_NONE
 
-		return mw
+		return mapWin
 	end
 
-	local alive = {}
+	local aliveTeams = {}
 	local plys = player.GetAll()
 
 	for i = 1, #plys do
-		local v = plys[i]
-		local tm = v:GetTeam()
+		local ply = plys[i]
+		local team = ply:GetTeam()
 
-		if (v:IsTerror() or v:IsBlockingRevival()) and not v:GetSubRoleData().preventWin and tm ~= TEAM_NONE then
-			alive[#alive + 1] = tm
+		if (ply:IsTerror() or ply:IsBlockingRevival()) and not ply:GetSubRoleData().preventWin and team ~= TEAM_NONE then
+			aliveTeams[#aliveTeams + 1] = team
+		end
+
+		-- special case: The revival blocks the round end
+		if ply:GetRevivalBlockMode() == REVIVAL_BLOCK_UNTIL_ALIVE then
+			return WIN_NONE
 		end
 	end
 
 	---
 	-- @realm server
-	hook.Run("TTT2ModifyWinningAlives", alive)
+	hook.Run("TTT2ModifyWinningAlives", aliveTeams)
 
 	local checkedTeams = {}
 	local b = 0
 
-	for i = 1, #alive do
-		local team = alive[i]
+	for i = 1, #aliveTeams do
+		local team = aliveTeams[i]
 
 		if team == TEAM_NONE then continue end
 
@@ -1581,7 +1596,7 @@ function GM:TTTCheckForWin()
 	if b > 1 then -- if >= 2 teams alive: no one wins
 		return WIN_NONE -- early out
 	elseif b == 1 then -- just 1 team is alive
-		return alive[1]
+		return aliveTeams[1]
 	else -- rare case: nobody is alive, e.g. because of an explosion
 		return TEAM_NONE -- none_win
 	end
