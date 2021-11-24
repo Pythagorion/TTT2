@@ -40,9 +40,29 @@ ROLE.score = {
 	-- round ended with nobody winning, usually a negative number.
 	timelimitMultiplier = 0,
 
-	-- the amount of points gained by killing yourself. Should be a
+	-- The amount of points gained by killing yourself. Should be a
 	-- negative number for most roles.
 	suicideMultiplier = -1
+}
+
+ROLE.karma = {
+	-- The multiplier that is used to calculate the Karma penalty for a team kill.
+	-- Keep in mind that the game will increase the multiplier further if it was avoidable
+	-- like a kill on a public policing role.
+	teamKillPenaltyMultiplier = 1,
+
+	-- The multiplier that is used to calculate the Karma penalty for team damage.
+	-- Keep in mind that the game will increase the multiplier further if it was avoidable
+	-- like damage applied to a public policing role.
+	teamHurtPenaltyMultiplier = 1,
+
+	-- The multiplier that is used to change the Karma given to the killer if a player
+	-- from an enemy team is killed.
+	enemyKillBonusMultiplier = 1,
+
+	-- The multiplier that is used to change the Karma given to the attacker if a player
+	-- from an enemy team is damaged.
+	enemyHurtBonusMultiplier = 1,
 }
 
 ROLE.conVarData = {
@@ -59,7 +79,7 @@ ROLE.conVarData = {
 	minKarma = 0,
 
 	-- Defines if the role has access to traitor buttons.
-	traitorButton = 1,
+	traitorButton = 0,
 
 	-- Sets the amount of credits the role is starting with.
 	credits = 0,
@@ -125,6 +145,10 @@ ROLE.isPublicRole = false
 -- a corpse and evil roles can be rewarded more points for them being killed.
 ROLE.isPolicingRole = false
 
+-- Omniscient roles are able to see missing in action players and therefore the haste
+-- mode timer as well. This is mostly traitor-like behaviour.
+ROLE.isOmniscientRole = false
+
 -- If this is set to true, the role is unable to send messages in the team chat. If this is
 -- set to false, it still could mean that the player is unable to use the team chat. If the
 -- role flag `.unknownTeam` is set, the team chat can't be used either.
@@ -135,6 +159,14 @@ ROLE.disabledTeamChatRecv = false
 
 -- By setting this to true, the role is unable to write in the general chat.
 ROLE.disabledGeneralChat = false
+
+-- If this is set to true, the role is unable to speak in the team voice chat. If this is
+-- set to false, it still could mean that the player is unable to use the team chat. If the
+-- role flag `.unknownTeam` is set, the team chat can't be used either.
+ROLE.disabledTeamVoice = false
+
+-- If this is set to true, the given role is unable to hear team voice chat.
+ROLE.disabledTeamVoiceRecv = false
 
 ---
 -- This function is called before initializing a @{ROLE}, but after all

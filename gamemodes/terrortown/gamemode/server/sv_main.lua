@@ -336,8 +336,6 @@ function GM:Initialize()
 
 	self.DamageLog = {}
 	self.LastRole = {}
-	self.playermodel = playermodels.GetRandomPlayerModel()
-	self.playercolor = COLOR_WHITE
 
 	-- Delay reading of cvars until config has definitely loaded
 	self.cvar_init = false
@@ -427,34 +425,6 @@ function GM:InitPostEntity()
 	-- load all HUD elements
 	hudelements.OnLoaded()
 
-	local itms = items.GetList()
-
-	local isSqlTableCreated = sql.CreateSqlTable("ttt2_items", ShopEditor.savingKeys)
-
-	for i = 1, #itms do
-		local eq = itms[i]
-
-		InitDefaultEquipment(eq)
-		ShopEditor.InitDefaultData(eq)
-
-		if isSqlTableCreated then
-			local name = GetEquipmentFileName(WEPS.GetClass(eq))
-			local loaded, changed = sql.Load("ttt2_items", name, eq, ShopEditor.savingKeys)
-
-			if not loaded then
-				sql.Init("ttt2_items", name, eq, ShopEditor.savingKeys)
-			elseif changed then
-				CHANGED_EQUIPMENT[#CHANGED_EQUIPMENT + 1] = {name, eq}
-			end
-		end
-
-		CreateEquipment(eq) -- init items
-
-		eq.CanBuy = {} -- reset normal items equipment
-
-		eq:Initialize()
-	end
-
 	local sweps = weapons.GetList()
 
 	for i = 1, #sweps do
@@ -520,6 +490,10 @@ function GM:InitPostEntity()
 
 	-- initialize playermodel database
 	playermodels.Initialize()
+
+	-- set the default random playermodel
+	self.playermodel = playermodels.GetRandomPlayerModel()
+	self.playercolor = COLOR_WHITE
 
 	timer.Simple(0, function()
 		addonChecker.Check()
@@ -1368,6 +1342,9 @@ function GM:OnReloaded()
 	-- reload entity spawns from file
 	entspawnscript.OnLoaded()
 
+	-- load all items
+	items.OnLoaded()
+
 	-- load all HUDs
 	huds.OnLoaded()
 
@@ -1377,6 +1354,10 @@ function GM:OnReloaded()
 	-- reload everything from the playermodels
 	playermodels.Initialize()
 	playermodels.StreamModelStateToSelectedClients()
+
+	-- set the default random playermodel
+	self.playermodel = playermodels.GetRandomPlayerModel()
+	self.playercolor = COLOR_WHITE
 
 	---
 	-- @realm shared
@@ -1564,7 +1545,7 @@ function GM:TTTCheckForWin()
 		end
 
 		-- special case: The revival blocks the round end
-		if ply:GetRevivalBlockMode() == REVIVAL_BLOCK_UNTIL_ALIVE then
+		if ply:GetRevivalBlockMode() == REVIVAL_BLOCK_ALL then
 			return WIN_NONE
 		end
 	end
